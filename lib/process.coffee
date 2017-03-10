@@ -24,26 +24,62 @@ module.exports = (pwd, shell, args, options={}) ->
   if /zsh|bash/.test(shell) and args.indexOf('--login') == -1 and process.platform isnt 'win32'
     args.unshift '--login'
 
-  ptyProcess = pty.fork shell, args,
-    cwd: pwd,
-    env: filteredEnvironment,
-    name: 'xterm-256color'
+  if shell
+    ptyProcess = pty.fork shell, args,
+      cwd: pwd,
+      env: filteredEnvironment,
+      name: 'xterm-256color'
 
-  title = shell = path.basename shell
+    title = shell = path.basename shell
 
-  emitTitle = _.throttle ->
-    emit('platformio-ide-terminal:title', ptyProcess.process)
-  , 500, true
+    emitTitle = _.throttle ->
+      emit('platformio-ide-terminal:title', ptyProcess.process)
+    , 500, true
 
-  ptyProcess.on 'data', (data) ->
-    emit('platformio-ide-terminal:data', data)
-    emitTitle()
+    ptyProcess.on 'data', (data) ->
+      emit('platformio-ide-terminal:data', data)
+      emitTitle()
 
-  ptyProcess.on 'exit', ->
-    emit('platformio-ide-terminal:exit')
-    callback()
+    ptyProcess.on 'exit', ->
+      emit('platformio-ide-terminal:exit')
+      callback()
 
-  process.on 'message', ({event, cols, rows, text}={}) ->
-    switch event
-      when 'resize' then ptyProcess.resize(cols, rows)
-      when 'input' then ptyProcess.write(text)
+    process.on 'message', ({event, cols, rows, text}={}) ->
+      console.log('received event')
+      switch event
+        when 'resize' then ptyProcess.resize(cols, rows)
+        when 'input' then ptyProcess.master.write(text)
+  else
+    ptyProcess = pty.open()
+    shell = ''
+
+    title = shell = path.basename shell
+
+    emitTitle = _.throttle ->
+      emit('platformio-ide-terminal:title', ptyProcess.process)
+    , 500, true
+
+    ptyProcess.slave.on 'data', (data) ->
+      console.log("ptyProcess.master data")
+      emit('platformio-ide-terminal:data', data)
+      emitTitle()
+
+    ptyProcess.master.on 'data', (data) ->
+      console.log("ptyProcess.master data")
+      emit('platformio-ide-terminal:data', data)
+      emitTitle()
+
+    ptyProcess.slave.on 'exit', ->
+      console.log("ptyProcess.master exit")
+      emit('platformio-ide-terminal:exit')
+      callback()
+
+    ptyProcess.master.on 'exit', ->
+      console.log("ptyProcess.master exit")
+      emit('platformio-ide-terminal:exit')
+      callback()
+
+    process.on 'message', ({event, cols, rows, text}={}) ->
+      switch event
+        when 'resize' then ptyProcess.resize(cols, rows)
+        when 'input' then ptyProcess.write(text)
