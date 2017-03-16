@@ -15,10 +15,10 @@ module.exports =
       @statusBarTile.runCommandInNewTerminal commands
     getTerminalViews: () =>
       @statusBarTile.terminalViews
+    open: () =>
+      @statusBarTile.runNewTerminal()
 
   provideRunInTerminal: ->
-    new: (commands) =>
-      @statusBarTile.runNewTerminal()
     run: (commands) =>
       @statusBarTile.runCommandInNewTerminal commands
     getTerminalViews: () =>

@@ -59,18 +59,22 @@ module.exports = (pwd, shell, args, options={}) ->
       emit('platformio-ide-terminal:title', ptyProcess.process)
     , 500, true
 
+    # TODO: since this is run in a task (seperate thread?), i think that the task is not executed (aka no pty exists yet) when gdb needs the pty in order to start, need some way to wait for pty to exist (or timeout)
+    # Currently able to send the task a message, then the task will emit the pty event
+    console.log("found pty (in process.coffee): ", ptyProcess.pty)
+
     ptyProcess.slave.on 'data', (data) ->
-      console.log("ptyProcess.master data")
+      console.log("ptyProcess.slave data ", data)
       emit('platformio-ide-terminal:data', data)
       emitTitle()
 
     ptyProcess.master.on 'data', (data) ->
-      console.log("ptyProcess.master data")
+      console.log("ptyProcess.master data ", data)
       emit('platformio-ide-terminal:data', data)
       emitTitle()
 
     ptyProcess.slave.on 'exit', ->
-      console.log("ptyProcess.master exit")
+      console.log("ptyProcess.slave exit")
       emit('platformio-ide-terminal:exit')
       callback()
 
@@ -83,3 +87,4 @@ module.exports = (pwd, shell, args, options={}) ->
       switch event
         when 'resize' then ptyProcess.resize(cols, rows)
         when 'input' then ptyProcess.write(text)
+        when 'pty' then emit('platformio-ide-terminal:pty', ptyProcess.pty)

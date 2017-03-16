@@ -145,71 +145,35 @@ class StatusBar extends View
         event.originalEvent.dataTransfer.setData 'platformio-ide-terminal-tab', 'true'
       pane.onDidDestroy -> tabBar.off 'drop', @onDropTabBar
 
-  createEmptyTerminalView: () ->
-    @registerPaneSubscription() unless @paneSubscription?
-
-    projectFolder = atom.project.getPaths()[0]
-    editorPath = atom.workspace.getActiveTextEditor()?.getPath()
-
-    if editorPath?
-      editorFolder = path.dirname(editorPath)
-      for directory in atom.project.getPaths()
-        if editorPath.indexOf(directory) >= 0
-          projectFolder = directory
-
-    projectFolder = undefined if projectFolder?.indexOf('atom://') >= 0
-
-    home = if process.platform is 'win32' then process.env.HOMEPATH else process.env.HOME
-
-    switch atom.config.get('platformio-ide-terminal.core.workingDirectory')
-      when 'Project' then pwd = projectFolder or editorFolder or home
-      when 'Active File' then pwd = editorFolder or projectFolder or home
-      else pwd = home
-
-    id = editorPath or projectFolder or home
-    id = filePath: id, folderPath: path.dirname(id)
-
-    # shell = atom.config.get 'platformio-ide-terminal.core.shell'
-    # shellArguments = atom.config.get 'platformio-ide-terminal.core.shellArguments'
-    # args = shellArguments.split(/\s+/g).filter (arg) -> arg
-
-    statusIcon = new StatusIcon()
-    platformIOTerminalView = new PlatformIOTerminalView(id, pwd, statusIcon, this, null, [], [])
-    statusIcon.initialize(platformIOTerminalView)
-
-    platformIOTerminalView.attach()
-
-    @terminalViews.push platformIOTerminalView
-    @statusContainer.append statusIcon
-    return platformIOTerminalView
-
   createTerminalView: (autoRun) ->
-    @registerPaneSubscription() unless @paneSubscription?
-
-    projectFolder = atom.project.getPaths()[0]
-    editorPath = atom.workspace.getActiveTextEditor()?.getPath()
-
-    if editorPath?
-      editorFolder = path.dirname(editorPath)
-      for directory in atom.project.getPaths()
-        if editorPath.indexOf(directory) >= 0
-          projectFolder = directory
-
-    projectFolder = undefined if projectFolder?.indexOf('atom://') >= 0
-
-    home = if process.platform is 'win32' then process.env.HOMEPATH else process.env.HOME
-
-    switch atom.config.get('platformio-ide-terminal.core.workingDirectory')
-      when 'Project' then pwd = projectFolder or editorFolder or home
-      when 'Active File' then pwd = editorFolder or projectFolder or home
-      else pwd = home
-
-    id = editorPath or projectFolder or home
-    id = filePath: id, folderPath: path.dirname(id)
-
     shell = atom.config.get 'platformio-ide-terminal.core.shell'
     shellArguments = atom.config.get 'platformio-ide-terminal.core.shellArguments'
     args = shellArguments.split(/\s+/g).filter (arg) -> arg
+    return createEmptyTerminalView autoRun, shell, args
+
+  createEmptyTerminalView: (autoRun=[], shell = null, args = []) ->
+    @registerPaneSubscription() unless @paneSubscription?
+
+    projectFolder = atom.project.getPaths()[0]
+    editorPath = atom.workspace.getActiveTextEditor()?.getPath()
+
+    if editorPath?
+      editorFolder = path.dirname(editorPath)
+      for directory in atom.project.getPaths()
+        if editorPath.indexOf(directory) >= 0
+          projectFolder = directory
+
+    projectFolder = undefined if projectFolder?.indexOf('atom://') >= 0
+
+    home = if process.platform is 'win32' then process.env.HOMEPATH else process.env.HOME
+
+    switch atom.config.get('platformio-ide-terminal.core.workingDirectory')
+      when 'Project' then pwd = projectFolder or editorFolder or home
+      when 'Active File' then pwd = editorFolder or projectFolder or home
+      else pwd = home
+
+    id = editorPath or projectFolder or home
+    id = filePath: id, folderPath: path.dirname(id)
 
     statusIcon = new StatusIcon()
     platformIOTerminalView = new PlatformIOTerminalView(id, pwd, statusIcon, this, shell, args, autoRun)

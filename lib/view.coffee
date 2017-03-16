@@ -142,13 +142,22 @@ class PlatformIOTerminalView extends View
       @input data
 
     @ptyProcess.on "platformio-ide-terminal:title", (title) =>
+      console.log("found title: ", title)
       @process = title
     @terminal.on "title", (title) =>
       @title = title
 
+    @ptyProcess.on "platformio-ide-terminal:pty", (pty) =>
+      console.log("found pty: ", pty)
+      @pty = pty
+
+    @ptyProcess.send {event: 'pty'}
+
     @terminal.once "open", =>
       @applyStyle()
       @resizeTerminalToView()
+
+      @pty()
 
       return unless @ptyProcess.childProcess?
       autoRunCommand = atom.config.get('platformio-ide-terminal.core.autoRunCommand')
@@ -266,6 +275,11 @@ class PlatformIOTerminalView extends View
     return unless @ptyProcess.childProcess?
 
     @ptyProcess.send {event: 'resize', rows, cols}
+
+  pty: () ->
+    return unless @ptyProcess.childProcess?
+
+    @ptyProcess.send {event: 'pty'}
 
   applyStyle: ->
     config = atom.config.get 'platformio-ide-terminal'
