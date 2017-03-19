@@ -142,22 +142,13 @@ class PlatformIOTerminalView extends View
       @input data
 
     @ptyProcess.on "platformio-ide-terminal:title", (title) =>
-      console.log("found title: ", title)
       @process = title
     @terminal.on "title", (title) =>
       @title = title
 
-    @ptyProcess.on "platformio-ide-terminal:pty", (pty) =>
-      console.log("found pty: ", pty)
-      @pty = pty
-
-    @ptyProcess.send {event: 'pty'}
-
     @terminal.once "open", =>
       @applyStyle()
       @resizeTerminalToView()
-
-      @pty()
 
       return unless @ptyProcess.childProcess?
       autoRunCommand = atom.config.get('platformio-ide-terminal.core.autoRunCommand')
@@ -233,6 +224,7 @@ class PlatformIOTerminalView extends View
         @displayTerminal()
         @prevHeight = @nearestRow(@xterm.height())
         @xterm.height(@prevHeight)
+        @emit "platformio-ide-terminal:terminal-open"
       else
         @focus()
 
@@ -277,9 +269,33 @@ class PlatformIOTerminalView extends View
     @ptyProcess.send {event: 'resize', rows, cols}
 
   pty: () ->
-    return unless @ptyProcess.childProcess?
+    console.log("looking for the pty")
 
-    @ptyProcess.send {event: 'pty'}
+    if not @opened
+      wait = new Promise (resolve, reject) =>
+        @emitter.on "platformio-ide-terminal:terminal-open", () =>
+          console.log("terminal is now open!!")
+          #TODO: remove listener?
+          resolve()
+        setTimeout reject, 300
+
+      wait.then () =>
+        @ptyPromise()
+    else
+      @ptyPromise()
+
+  ptyPromise: () ->
+    new Promise (resolve, reject) =>
+      if @ptyProcess?
+        @ptyProcess.on "platformio-ide-terminal:pty", (pty) =>
+          console.log("found pty: ", pty)
+          #TODO: remove listener?
+          resolve(pty)
+        @ptyProcess.send {event: 'pty'}
+        setTimeout reject, 300
+      else
+        console.log("no ptyProcess yet")
+        reject()
 
   applyStyle: ->
     config = atom.config.get 'platformio-ide-terminal'

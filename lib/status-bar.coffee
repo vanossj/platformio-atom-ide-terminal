@@ -149,7 +149,7 @@ class StatusBar extends View
     shell = atom.config.get 'platformio-ide-terminal.core.shell'
     shellArguments = atom.config.get 'platformio-ide-terminal.core.shellArguments'
     args = shellArguments.split(/\s+/g).filter (arg) -> arg
-    return createEmptyTerminalView autoRun, shell, args
+    @createEmptyTerminalView autoRun, shell, args
 
   createEmptyTerminalView: (autoRun=[], shell = null, args = []) ->
     @registerPaneSubscription() unless @paneSubscription?
@@ -239,6 +239,7 @@ class StatusBar extends View
   runNewTerminal: () ->
     @activeTerminal = @createEmptyTerminalView()
     @activeTerminal.toggle()
+    return @activeTerminal
 
   runCommandInNewTerminal: (commands) ->
     @activeTerminal = @createTerminalView(commands)
