@@ -269,13 +269,9 @@ class PlatformIOTerminalView extends View
     @ptyProcess.send {event: 'resize', rows, cols}
 
   pty: () ->
-    console.log("looking for the pty")
-
     if not @opened
       wait = new Promise (resolve, reject) =>
         @emitter.on "platformio-ide-terminal:terminal-open", () =>
-          console.log("terminal is now open!!")
-          #TODO: remove listener?
           resolve()
         setTimeout reject, 300
 
@@ -288,13 +284,10 @@ class PlatformIOTerminalView extends View
     new Promise (resolve, reject) =>
       if @ptyProcess?
         @ptyProcess.on "platformio-ide-terminal:pty", (pty) =>
-          console.log("found pty: ", pty)
-          #TODO: remove listener?
           resolve(pty)
         @ptyProcess.send {event: 'pty'}
         setTimeout reject, 300
       else
-        console.log("no ptyProcess yet")
         reject()
 
   applyStyle: ->
