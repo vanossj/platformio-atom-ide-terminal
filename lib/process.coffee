@@ -31,60 +31,23 @@ module.exports = (pwd, shell, args, options={}) ->
       name: 'xterm-256color'
 
     title = shell = path.basename shell
-
-    emitTitle = _.throttle ->
-      emit('platformio-ide-terminal:title', ptyProcess.process)
-    , 500, true
-
-    ptyProcess.on 'data', (data) ->
-      emit('platformio-ide-terminal:data', data)
-      emitTitle()
-
-    ptyProcess.on 'exit', ->
-      emit('platformio-ide-terminal:exit')
-      callback()
-
-    process.on 'message', ({event, cols, rows, text}={}) ->
-      console.log('received event')
-      switch event
-        when 'resize' then ptyProcess.resize(cols, rows)
-        when 'input' then ptyProcess.master.write(text)
   else
     ptyProcess = pty.open()
-    shell = ''
 
-    title = shell = path.basename shell
+  emitTitle = _.throttle ->
+    emit('platformio-ide-terminal:title', ptyProcess.process)
+  , 500, true
 
-    emitTitle = _.throttle ->
-      emit('platformio-ide-terminal:title', ptyProcess.process)
-    , 500, true
+  ptyProcess.on 'data', (data) ->
+    emit('platformio-ide-terminal:data', data)
+    emitTitle()
 
-    # TODO: since this is run in a task (seperate thread?), i think that the task is not executed (aka no pty exists yet) when gdb needs the pty in order to start, need some way to wait for pty to exist (or timeout)
-    # Currently able to send the task a message, then the task will emit the pty event
-    console.log("found pty (in process.coffee): ", ptyProcess.pty)
+  ptyProcess.on 'exit', ->
+    emit('platformio-ide-terminal:exit')
+    callback()
 
-    ptyProcess.slave.on 'data', (data) ->
-      console.log("ptyProcess.slave data ", data)
-      emit('platformio-ide-terminal:data', data)
-      emitTitle()
-
-    ptyProcess.master.on 'data', (data) ->
-      console.log("ptyProcess.master data ", data)
-      emit('platformio-ide-terminal:data', data)
-      emitTitle()
-
-    ptyProcess.slave.on 'exit', ->
-      console.log("ptyProcess.slave exit")
-      emit('platformio-ide-terminal:exit')
-      callback()
-
-    ptyProcess.master.on 'exit', ->
-      console.log("ptyProcess.master exit")
-      emit('platformio-ide-terminal:exit')
-      callback()
-
-    process.on 'message', ({event, cols, rows, text}={}) ->
-      switch event
-        when 'resize' then ptyProcess.resize(cols, rows)
-        when 'input' then ptyProcess.write(text)
-        when 'pty' then emit('platformio-ide-terminal:pty', ptyProcess.pty)
+  process.on 'message', ({event, cols, rows, text}={}) ->
+    switch event
+      when 'resize' then ptyProcess.resize(cols, rows)
+      when 'input' then ptyProcess.write(text)
+      when 'pty' then emit('platformio-ide-terminal:pty', ptyProcess.pty)
