@@ -273,7 +273,7 @@ class PlatformIOTerminalView extends View
       wait = new Promise (resolve, reject) =>
         @emitter.on "platformio-ide-terminal:terminal-open", () =>
           resolve()
-        setTimeout reject, 300
+        setTimeout reject, 1000
 
       wait.then () =>
         @ptyPromise()
@@ -286,7 +286,7 @@ class PlatformIOTerminalView extends View
         @ptyProcess.on "platformio-ide-terminal:pty", (pty) =>
           resolve(pty)
         @ptyProcess.send {event: 'pty'}
-        setTimeout reject, 300
+        setTimeout reject, 1000
       else
         reject()
 
